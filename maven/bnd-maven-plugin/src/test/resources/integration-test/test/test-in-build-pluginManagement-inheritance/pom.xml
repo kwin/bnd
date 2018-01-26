@@ -57,5 +57,14 @@ Bundle-SymbolicName: ${project.groupId}.${project.artifactId}
 				</plugin>
 			</plugins>
 		</pluginManagement>
+        <plugins>
+             <plugin>
+             	<groupId>biz.aQute.bnd</groupId>
+                <artifactId>bnd-maven-plugin</artifactId>
+                <configuration>
+                    <someconfig>somevalue</someconfig>
+                </configuration>
+            </plugin>
+        </plugins>
 	</build>
 </project>
