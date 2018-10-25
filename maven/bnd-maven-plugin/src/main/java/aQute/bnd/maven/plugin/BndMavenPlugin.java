@@ -34,6 +34,8 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.model.Developer;
+import org.apache.maven.model.License;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
 import org.apache.maven.model.PluginManagement;
@@ -49,6 +51,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.settings.Settings;
 import org.apache.maven.shared.mapping.MappingUtils;
+import org.codehaus.plexus.util.StringUtils;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -305,7 +308,92 @@ public class BndMavenPlugin extends AbstractMojo {
 					builder.setProperty(Constants.SNAPSHOT, TSTAMP);
 				}
 			}
+			
+			// Set Bundle-Description
+			if (builder.getProperty(Constants.BUNDLE_DESCRIPTION) == null) {
+				builder.setProperty(Constants.BUNDLE_DESCRIPTION, project.getDescription());
+			}
 
+			// Set Bundle-Vendor
+			if (builder.getProperty(Constants.BUNDLE_VENDOR) == null) {
+				builder.setProperty(Constants.BUNDLE_VENDOR, project.getOrganization().getName());
+			}
+			
+			// Set Bundle-License
+			if (builder.getProperty(Constants.BUNDLE_LICENSE) == null) {
+				List<String> licenses = new ArrayList<>();
+				for (License license : project.getLicenses()) {
+					StringBuilder licenseValue = new StringBuilder();
+					licenseValue.append(license.getName());
+					// link is optional
+					if (StringUtils.isNotBlank(license.getUrl())) {
+						licenseValue.append(";link=\"").append(license.getUrl()).append("\"");
+					}
+					licenses.add(licenseValue.toString());
+				}
+				builder.setProperty(Constants.BUNDLE_LICENSE, StringUtils.join(licenses.iterator(), ","));
+			}
+			
+			// Set Bundle-SCM
+			if (builder.getProperty(Constants.BUNDLE_SCM) == null) {
+				List<String> scmAttributes = new ArrayList<>();
+				if (StringUtils.isNotBlank(project.getScm().getUrl())) {
+					scmAttributes.add("url=\""+project.getScm().getUrl()+"\"");
+				}
+				if (StringUtils.isNotBlank(project.getScm().getConnection())) {
+					scmAttributes.add("connection=\""+project.getScm().getConnection()+"\"");
+				}
+				if (StringUtils.isNotBlank(project.getScm().getDeveloperConnection())) {
+					scmAttributes.add("developer-connection=\""+project.getScm().getDeveloperConnection()+"\"");
+				}
+				if (StringUtils.isNotBlank(project.getScm().getTag())) {
+					scmAttributes.add("tag=\""+project.getScm().getTag()+"\"");
+				}
+				if (!scmAttributes.isEmpty()) {
+					builder.setProperty(Constants.BUNDLE_SCM, StringUtils.join(scmAttributes.iterator(), ","));
+				}
+			}
+			
+			// Set Bundle-Developers
+			if (builder.getProperty(Constants.BUNDLE_DEVELOPERS) == null) {
+				List<String> developers = new ArrayList<>();
+				// https://maven.apache.org/pom.html#Developers
+				for (Developer developer : project.getDevelopers()) {
+					StringBuilder developerValue = new StringBuilder();
+					developerValue.append(developer.getId());
+					// all attributes are optional
+					List<String> developerAttributes = new ArrayList<>();
+					if (StringUtils.isNotBlank(developer.getEmail())) {
+						developerAttributes.add("email=\""+developer.getEmail()+"\"");
+					}
+					if (StringUtils.isNotBlank(developer.getName())) {
+						developerAttributes.add("name=\""+developer.getName()+"\"");
+					}
+					if (StringUtils.isNotBlank(developer.getOrganization())) {
+						developerAttributes.add("organization=\""+developer.getOrganization()+"\"");
+					}
+					if (StringUtils.isNotBlank(developer.getOrganizationUrl())) {
+						developerAttributes.add("organizationUrl=\""+developer.getOrganizationUrl()+"\"");
+					}
+					if (!developer.getRoles().isEmpty()) {
+						developerAttributes.add("roles=\""+StringUtils.join(developer.getRoles().iterator(), ",")+"\"");
+					}
+					if (StringUtils.isNotBlank(developer.getTimezone())) {
+						developerAttributes.add("timezone=\""+developer.getTimezone()+"\"");
+					}
+					if (developerAttributes.size() > 0) {
+						developerValue.append(";").append(StringUtils.join(developerAttributes.iterator(), ";"));
+					}
+					developers.add(developerValue.toString());
+				}
+				builder.setProperty(Constants.BUNDLE_DEVELOPERS, StringUtils.join(developers.iterator(), ","));
+			}
+			
+			// Set Bundle-DocURL
+			if (builder.getProperty(Constants.BUNDLE_DOCURL) == null) {
+				builder.setProperty(Constants.BUNDLE_DOCURL, project.getUrl());
+			}
+						
 			logger.debug("builder properties: {}", builder.getProperties());
 			logger.debug("builder delta: {}", delta);
 
